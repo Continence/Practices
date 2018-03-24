@@ -49,7 +49,7 @@ public class ObservableTest {
         }).map(new Observable.Transformer<Integer, String>() {
             @Override
             public String call(Integer integer) {
-                return "mapping "+integer;
+                return "mapping " + integer;
             }
         }).subscribe(new Subscriber<String>() {
             @Override
@@ -67,5 +67,61 @@ public class ObservableTest {
                 System.out.println("S:" + s);
             }
         });
+    }
+
+    @Test
+    public void subscribeOn() throws Exception {
+        Observable.create(new Observable.OnSubscriber<Integer>() {
+            @Override
+            public void call(Subscriber<? super Integer> subscriber) {
+                System.out.println("OnSubscribe@ " + Thread.currentThread().getName()); //new Thread
+                subscriber.onNext(1);
+            }
+        }).subscribeOn(Schedulers.io())
+                .subscribe(new Subscriber<Integer>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+
+                    }
+
+                    @Override
+                    public void onNext(Integer integer) {
+                        System.out.println("Subscriber@ " + Thread.currentThread().getName()); // new Thread
+                        System.out.println(integer);
+                    }
+                });
+    }
+
+    @Test
+    public void observeOn() throws Exception {
+        Observable.create(new Observable.OnSubscriber<Integer>() {
+            @Override
+            public void call(Subscriber<? super Integer> subscriber) {
+                System.out.println("OnSubscribe@ " + Thread.currentThread().getName()); // main
+                subscriber.onNext(1);
+            }
+        }).observeOn(Schedulers.io())
+                .subscribe(new Subscriber<Integer>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+
+                    }
+
+                    @Override
+                    public void onNext(Integer integer) {
+                        System.out.println("Subscriber@ " + Thread.currentThread().getName()); // new Thread
+                        System.out.println(integer);
+                    }
+                });
     }
 }

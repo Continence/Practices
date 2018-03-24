@@ -20,6 +20,7 @@ public class Observable<T> {
 
     /**
      * RxJava创建入口，创建一个观察者，该观察者包含一个我们需要在订阅者接收到消息时进行处理的回调方法的接口。
+     *
      * @param onSubscriber
      * @param <T>
      * @return
@@ -79,6 +80,62 @@ public class Observable<T> {
 //        });
         //使用重构的方式，减少代码臃肿
         return create(new MapOnSubscribe<>(this, transformer));
+    }
+
+    public Observable<T> subscribeOn(final Scheduler scheduler) {
+        return Observable.create(new OnSubscriber<T>() {
+            @Override
+            public void call(final Subscriber<? super T> subscriber) {
+                subscriber.onStart();
+                scheduler.createWorker().schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        Observable.this.onSubscriber.call(subscriber);
+                    }
+                });
+            }
+        });
+    }
+
+    public Observable<T> observeOn(final Scheduler scheduler) {
+        return Observable.create(new OnSubscriber<T>() {
+            @Override
+            public void call(final Subscriber<? super T> subscriber) {
+                subscriber.onStart();
+                final Scheduler.Worker worker = scheduler.createWorker();
+                Observable.this.onSubscriber.call(new Subscriber<T>() {
+                    @Override
+                    public void onCompleted() {
+                        worker.schedule(new Runnable() {
+                            @Override
+                            public void run() {
+
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+                        worker.schedule(new Runnable() {
+                            @Override
+                            public void run() {
+
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onNext(final T t) {
+                        worker.schedule(new Runnable() {
+                            @Override
+                            public void run() {
+                                subscriber.onNext(t);
+                            }
+                        });
+                    }
+                });
+            }
+        });
     }
 
     public interface OnSubscriber<T> {
